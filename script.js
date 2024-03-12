@@ -174,179 +174,212 @@ var spiderSvg = d3.select("body")
             .style("float", "right")
             .attr("preserveAspectRatio", "xMidYMid meet")
 
-// TEST DATA: REPLACE WITH REAL WHEN READY
-var cities = ["Ahmedabad", "Bengaluru", "Chennai", "Delhi", "Greater Mumbai", "Hyderabad", "Kanpur", "Kolkata", "Lucknow", "Surat"]
-var spiderData = cities.map((c) => {return {
-    name: c, 
-    "Total spending": Math.random(), 
-    "Female spending": Math.random(), 
-    "Entertainment spending": Math.random(), 
-    "Grocery spending": Math.random(), 
-    "Silver card spending": Math.random()}})
-var selectedSpiderData = spiderData
+d3.csv("data/top_10_cities_transactions.csv").then(data => {
 
-// Radius calculation
-var radScale = d3.scaleLinear()
-    .domain([0, 1])  // Values need to be normalised within their range
-    .range([0, spiderRad])
-
-// Draw radial ticks
-var ticks = [0.25, 0.5, 0.75, 1] 
-spiderSvg.selectAll("circle")
-    .data(ticks)
-    .enter()
-    .append("circle")
-        .attr("cx", spiderWidth / 2)
-        .attr("cy", spiderHeight / 2)
-        .attr("r", (t) => radScale(t))
-        .attr("stroke", "gray")
-        .attr("fill", "none")
-spiderSvg.selectAll("text")
-    .data(ticks)
-    .enter()
-    .append("text")
-        .attr("x", (spiderWidth / 2) + 10)
-        .attr("y", (d) => (spiderHeight / 2) - radScale(d) + 10)
-        .text((d) => (100 * d) + "%")
-        .style("font-size", "12px")
-        .style("font-family", "Helvetica")
-
-// Draw axes
-var axes = ["Total spending", "Female spending", "Entertainment spending", "Grocery spending", "Silver card spending"]
-var numAxes = axes.length
-var axesPositions = axes.map((a, i) => {
-    let angle = (Math.PI / 2) + ((2 * Math.PI * i) / numAxes)
-    let xLen = Math.cos(angle) * spiderRad
-    let yLen = Math.sin(angle) * spiderRad
-    return {name: a, x: (spiderWidth / 2) + xLen, y: (spiderHeight / 2) - yLen}
-})
-spiderSvg.selectAll("line")
-    .data(axesPositions)
-    .enter()
-    .append("line")
-        .attr("x1", spiderWidth / 2)
-        .attr("y1", spiderHeight / 2)
-        .attr("x2", (d) => d.x)
-        .attr("y2", (d) => d.y)
-        .attr("stroke","black")
-spiderSvg.selectAll("myaxes")
-    .data(axesPositions)
-    .enter()
-    .append("text")
-        .attr("x", (d) => {if (d.x < spiderWidth / 2) {return d.x - 10} else {return d.x + 10}})
-        .attr("y", (d) => {if (d.y < spiderHeight / 2) {return d.y - 10} else {return d.y + 10}})
-        .attr("text-anchor", (d) => {if (d.x < spiderWidth / 2) {return "end"} else {return "start"}})
-        .text((d) => d.name)
-        .style("font-size", "12px")
-        .style("font-family", "Helvetica")
-
-// Colour scheme
-var spiderColours = d3.scaleOrdinal()
-    .domain(cities)
-    .range(d3.schemeCategory10)
-
-// Plot paths
-var paths = spiderData.map((d) => {
-    let coords = []
-    axes.forEach((a, i) => {
-        let angle = (Math.PI / 2) + ((2 * Math.PI * i) / numAxes)
-        let xLen = Math.cos(angle) * radScale(d[a])
-        let yLen = Math.sin(angle) * radScale(d[a])
-        coords.push({x: (spiderWidth / 2) + xLen, y: (spiderHeight / 2) - yLen})
+    // TEST DATA: REPLACE WITH REAL WHEN READY
+    /*var cities = ["Ahmedabad", "Bengaluru", "Chennai", "Delhi", "Greater Mumbai", "Hyderabad", "Kanpur", "Kolkata", "Lucknow", "Surat"]
+    var spiderData = cities.map((c) => {return {
+        name: c, 
+        "Total spending": Math.random(), 
+        "Female spending": Math.random(), 
+        "Entertainment spending": Math.random(), 
+        "Grocery spending": Math.random(), 
+        "Silver card spending": Math.random()}})*/
+    var spiderCumulative = new Object()
+    data.forEach((d) => {
+        let cityName = d.City.split(',')[0]
+        let spend = parseInt(d.Amount)
+        if (spiderCumulative[cityName] === undefined) {
+            spiderCumulative[cityName] = {total: 0, female: 0, entertainment: 0, grocery: 0, silver: 0}
+        }
+        spiderCumulative[cityName].total += spend
+        if (d.Gender === "F") {
+            spiderCumulative[cityName].female += spend
+        }
+        if (d["Exp Type"] === "Entertainment") {
+            spiderCumulative[cityName].entertainment += spend
+        }
+        if (d["Exp Type"] === "Grocery") {
+            spiderCumulative[cityName].grocery += spend
+        }
+        if (d["Card Type"] === "Silver") {
+            spiderCumulative[cityName].silver += spend
+        }
     })
-    let start = coords[0]
-    coords.push(start)
-    return {name: d.name, path: coords}
-})
-spiderSvg.selectAll("path")
-    .data(paths)
-    .enter()
-    .append("path")
-        .attr("id", (d) => d.name.replace(/\s+/g, ''))
-        .datum((d) => d.path)
-        .attr("d", d3.line().x((d) => d.x).y((d) => d.y))
-        .attr("stroke-width", 3)
-        .attr("stroke", (d) => spiderColours(d))
-        .attr("fill", (d) => spiderColours(d))
-        .attr("stroke-opacity", 0)
-        .attr("fill-opacity", 0)
+    var cities = Object.keys(spiderCumulative)
+    var allSpend = cities.reduce((partial, c) => partial + spiderCumulative[c].total, 0)
+    var spiderData = cities.map((c) => {return {
+        name: c, 
+        "Total spending": spiderCumulative[c].total / allSpend,
+        "Female spending": spiderCumulative[c].female / spiderCumulative[c].total, 
+        "Entertainment spending": spiderCumulative[c].entertainment / spiderCumulative[c].total, 
+        "Grocery spending": spiderCumulative[c].grocery / spiderCumulative[c].total, 
+        "Silver card spending": spiderCumulative[c].silver / spiderCumulative[c].total}})
+    console.log(spiderData)
 
-// Add title
-spiderSvg.append("text")
-    .attr("class", "chart-title")
-    .attr("x", spiderWidth / 2)
-    .attr("y", (spiderHeight / 2) - spiderRad - 50)
-    .attr("text-anchor", "middle")
-    .text("Compare spending between cities by checking the boxes:")
-    .style("font-size", "20px")
-    .style("font-family", "Helvetica")
+    // Radius calculation
+    var radScale = d3.scaleLinear()
+        .domain([0, 1])  // Values need to be normalised within their range
+        .range([0, spiderRad])
 
-// Add legend with checkboxes
-spiderSvg.selectAll("mycheckboxes")
-    .data(cities)
-    .enter()
-    .append("rect")
-        .attr("x", (_,i) => 5 + ((spiderWidth / 4) * (i % 4)))  // Lines of 4
-        .attr("y", (_,i) => 5 + (spiderHeight / 2) + spiderRad + (25 * Math.floor(i / 4)))  // Start right below the spider
-        .attr("width", 20)
-        .attr("height", 20)
-        .attr("selected", 0)
-        .attr("name", (d) => d)
-        .style("fill", (d) => spiderColours(d))
-        .style("stroke", "black")
-        .style("stroke-width", 2)
-        .style("fill-opacity", 0)
-        .on("mouseover", function(d) {
-            let thisObj = d3.select(this)
-            if (thisObj.attr("selected") === "0") {
-                thisObj.transition()
-                    .duration(100)
-                    .style("fill-opacity", 0.5)
-            }
-        })
-        .on("mouseout", function(d) {
-            let thisObj = d3.select(this)
-            if (thisObj.attr("selected") === "0") {
-                thisObj.transition()
-                    .duration(100)
-                    .style("fill-opacity", 0)
-            }
-        })
-        .on("click", function(d) {
-            let thisObj = d3.select(this)
-            let relativePath = d3.selectAll("#" + thisObj.attr("name").replace(/\s+/g, ''))
-            console.log("#" + thisObj.attr("name"))
-            console.log(relativePath)
-            if (thisObj.attr("selected") === "0") {
-                thisObj.transition()
-                    .duration(100)
-                    .style("fill-opacity", 1)
-                    .attr("selected", 1)
-                relativePath.transition()
-                    .duration(100)
-                    .style("stroke-opacity", 1)
-                    .style("fill-opacity", 0.5)
-            } else {
-                thisObj.transition()
-                    .duration(100)
-                    .style("fill-opacity", 0)
-                    .attr("selected", 0)
-                relativePath.transition()
-                    .duration(100)
-                    .style("stroke-opacity", 0)
-                    .style("fill-opacity", 0)
-            }
-        })
+    // Draw radial ticks
+    var ticks = [0.25, 0.5, 0.75, 1] 
+    spiderSvg.selectAll("circle")
+        .data(ticks)
+        .enter()
+        .append("circle")
+            .attr("cx", spiderWidth / 2)
+            .attr("cy", spiderHeight / 2)
+            .attr("r", (t) => radScale(t))
+            .attr("stroke", "gray")
+            .attr("fill", "none")
+    spiderSvg.selectAll("text")
+        .data(ticks)
+        .enter()
+        .append("text")
+            .attr("x", (spiderWidth / 2) + 10)
+            .attr("y", (d) => (spiderHeight / 2) - radScale(d) + 10)
+            .text((d) => (100 * d) + "%")
+            .style("font-size", "12px")
+            .style("font-family", "Helvetica")
 
-spiderSvg.selectAll("checkboxlabels")
-    .data(cities)
-    .enter()
-    .append("text")
-        .attr("x", (_,i) => 30 + ((spiderWidth / 4) * (i % 4)))
-        .attr("y", (_,i) => 20 + (spiderHeight / 2) + spiderRad + (25 * Math.floor(i / 4)))
-        .text((d) => d)
-        .style("font-size", "14px")
+    // Draw axes
+    var axes = ["Total spending", "Female spending", "Entertainment spending", "Grocery spending", "Silver card spending"]
+    var numAxes = axes.length
+    var axesPositions = axes.map((a, i) => {
+        let angle = (Math.PI / 2) + ((2 * Math.PI * i) / numAxes)
+        let xLen = Math.cos(angle) * spiderRad
+        let yLen = Math.sin(angle) * spiderRad
+        return {name: a, x: (spiderWidth / 2) + xLen, y: (spiderHeight / 2) - yLen}
+    })
+    spiderSvg.selectAll("line")
+        .data(axesPositions)
+        .enter()
+        .append("line")
+            .attr("x1", spiderWidth / 2)
+            .attr("y1", spiderHeight / 2)
+            .attr("x2", (d) => d.x)
+            .attr("y2", (d) => d.y)
+            .attr("stroke","black")
+    spiderSvg.selectAll("myaxes")
+        .data(axesPositions)
+        .enter()
+        .append("text")
+            .attr("x", (d) => {if (d.x < spiderWidth / 2) {return d.x - 10} else {return d.x + 10}})
+            .attr("y", (d) => {if (d.y < spiderHeight / 2) {return d.y - 10} else {return d.y + 10}})
+            .attr("text-anchor", (d) => {if (d.x < spiderWidth / 2) {return "end"} else {return "start"}})
+            .text((d) => d.name)
+            .style("font-size", "12px")
+            .style("font-family", "Helvetica")
+
+    // Colour scheme
+    var spiderColours = d3.scaleOrdinal()
+        .domain(cities)
+        .range(d3.schemeCategory10)
+
+    // Plot paths
+    var paths = spiderData.map((d) => {
+        let coords = []
+        axes.forEach((a, i) => {
+            let angle = (Math.PI / 2) + ((2 * Math.PI * i) / numAxes)
+            let xLen = Math.cos(angle) * radScale(d[a])
+            let yLen = Math.sin(angle) * radScale(d[a])
+            coords.push({x: (spiderWidth / 2) + xLen, y: (spiderHeight / 2) - yLen})
+        })
+        let start = coords[0]
+        coords.push(start)
+        return {name: d.name, path: coords}
+    })
+    spiderSvg.selectAll("path")
+        .data(paths)
+        .enter()
+        .append("path")
+            .attr("id", (d) => d.name.replace(/\s+/g, ''))
+            .datum((d) => d.path)
+            .attr("d", d3.line().x((d) => d.x).y((d) => d.y))
+            .attr("stroke-width", 3)
+            .attr("stroke", (d) => spiderColours(d))
+            .attr("fill", (d) => spiderColours(d))
+            .attr("stroke-opacity", 0)
+            .attr("fill-opacity", 0)
+
+    // Add title
+    spiderSvg.append("text")
+        .attr("class", "chart-title")
+        .attr("x", spiderWidth / 2)
+        .attr("y", (spiderHeight / 2) - spiderRad - 50)
+        .attr("text-anchor", "middle")
+        .text("Compare spending between cities by checking the boxes:")
+        .style("font-size", "20px")
         .style("font-family", "Helvetica")
+
+    // Add legend with checkboxes
+    spiderSvg.selectAll("mycheckboxes")
+        .data(cities)
+        .enter()
+        .append("rect")
+            .attr("x", (_,i) => 5 + ((spiderWidth / 4) * (i % 4)))  // Lines of 4
+            .attr("y", (_,i) => 5 + (spiderHeight / 2) + spiderRad + (25 * Math.floor(i / 4)))  // Start right below the spider
+            .attr("width", 20)
+            .attr("height", 20)
+            .attr("selected", 0)
+            .attr("name", (d) => d)
+            .style("fill", (d) => spiderColours(d))
+            .style("stroke", "black")
+            .style("stroke-width", 2)
+            .style("fill-opacity", 0)
+            .on("mouseover", function(d) {
+                let thisObj = d3.select(this)
+                if (thisObj.attr("selected") === "0") {
+                    thisObj.transition()
+                        .duration(100)
+                        .style("fill-opacity", 0.5)
+                }
+            })
+            .on("mouseout", function(d) {
+                let thisObj = d3.select(this)
+                if (thisObj.attr("selected") === "0") {
+                    thisObj.transition()
+                        .duration(100)
+                        .style("fill-opacity", 0)
+                }
+            })
+            .on("click", function(d) {
+                let thisObj = d3.select(this)
+                let relativePath = d3.selectAll("#" + thisObj.attr("name").replace(/\s+/g, ''))
+                console.log("#" + thisObj.attr("name"))
+                console.log(relativePath)
+                if (thisObj.attr("selected") === "0") {
+                    thisObj.transition()
+                        .duration(100)
+                        .style("fill-opacity", 1)
+                        .attr("selected", 1)
+                    relativePath.transition()
+                        .duration(100)
+                        .style("stroke-opacity", 1)
+                        .style("fill-opacity", 0.5)
+                } else {
+                    thisObj.transition()
+                        .duration(100)
+                        .style("fill-opacity", 0)
+                        .attr("selected", 0)
+                    relativePath.transition()
+                        .duration(100)
+                        .style("stroke-opacity", 0)
+                        .style("fill-opacity", 0)
+                }
+            })
+
+    spiderSvg.selectAll("checkboxlabels")
+        .data(cities)
+        .enter()
+        .append("text")
+            .attr("x", (_,i) => 30 + ((spiderWidth / 4) * (i % 4)))
+            .attr("y", (_,i) => 20 + (spiderHeight / 2) + spiderRad + (25 * Math.floor(i / 4)))
+            .text((d) => d)
+            .style("font-size", "14px")
+            .style("font-family", "Helvetica")
+})
 
 // Update image position and size on window resize
 window.addEventListener("resize", function() {
