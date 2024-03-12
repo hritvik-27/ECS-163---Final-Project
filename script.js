@@ -14,8 +14,8 @@ var windowHeight = window.innerHeight;
 function updateImageSize() {
 
     // Calculate the maximum available width and height
-    var maxWidth = windowWidth * 0.55; // 80% of window width for the left half
-    var maxHeight = windowHeight * 0.9; // 80% of window height
+    var maxWidth = windowWidth * 0.55; // 55% of window width for the left half
+    var maxHeight = windowHeight * 0.9; // 90% of window height
 
     // Determine the scaling factor based on available space
     var scaleX = maxWidth / imageWidth;
@@ -131,11 +131,29 @@ function updateImage() {
             .attr("cx", (d) => circlePos[d.name].cx)
             .attr("cy", (d) => circlePos[d.name].cy)
             .attr("r", (d) => cityScale(d.total))
+            .attr("name", (d) => d.name)
+            .attr("spend", (d) => d.total)
             .style("fill", "red")
             .style("fill-opacity", 0.5) // Set opacity for better visibility
             .style("stroke", "red")
             .style("stroke-width", 1)
-            .style("stroke-opacity", 1);
+            .style("stroke-opacity", 1)
+            .on("mouseover", function(d) {
+                let cityName = d3.select(this).attr("name")
+                let spend = d3.select(this).attr("spend")
+                d3.select("#Tooltip")
+                    .style("opacity", 1)
+                    .text(cityName + ": ₹" + spend.replace(/\B(?=(\d{3})+(?!\d))/g, ","))
+            })
+            .on("mouseout", function(d) {
+                d3.select("#Tooltip")
+                    .style("opacity", 0)
+            })
+            .on("mousemove", function(d) {
+                d3.select("#Tooltip")
+                    .attr("x", d.clientX)
+                    .attr("y", d.clientY)
+            })
         
         // Add title
         svg.append("text")
@@ -145,6 +163,13 @@ function updateImage() {
             .attr("text-anchor", "middle")
             .text("Click a city to see more detail")
             .style("font-size", "20px")
+            .style("font-family", "Helvetica")
+        
+        // Add tooltip
+        svg.append("text")
+            .attr("id", "Tooltip")
+            .text("Test")
+            .style("font-size", "14px")
             .style("font-family", "Helvetica")
     })
 }
@@ -177,14 +202,6 @@ var spiderSvg = d3.select("body")
 d3.csv("data/top_10_cities_transactions.csv").then(data => {
 
     // TEST DATA: REPLACE WITH REAL WHEN READY
-    /*var cities = ["Ahmedabad", "Bengaluru", "Chennai", "Delhi", "Greater Mumbai", "Hyderabad", "Kanpur", "Kolkata", "Lucknow", "Surat"]
-    var spiderData = cities.map((c) => {return {
-        name: c, 
-        "Total spending": Math.random(), 
-        "Female spending": Math.random(), 
-        "Entertainment spending": Math.random(), 
-        "Grocery spending": Math.random(), 
-        "Silver card spending": Math.random()}})*/
     var spiderCumulative = new Object()
     data.forEach((d) => {
         let cityName = d.City.split(',')[0]
