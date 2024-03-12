@@ -53,11 +53,11 @@ function parseCSV(csvData) {
 // Append SVG to the body of the HTML
 var svg = d3.select("body")
             .append("svg")
-            .attr("width", "100%")
-            .attr("height", "100%")
-            .attr("viewBox", "0 0 " + window.innerWidth + " " + window.innerHeight)
+            .attr("width", (window.innerWidth / 2) - 20)
+            .attr("height", window.innerHeight)
+            .attr("viewBox", "0 0 " + ((window.innerWidth / 2) - 20) + " " + window.innerHeight)
+            .style("float", "left")
             .attr("preserveAspectRatio", "xMidYMid meet")
-            .style("background-color", "black"); // Set background color to black
 
 // Function to update the image position and size
 function updateImage() {
@@ -120,10 +120,124 @@ svg.append("image")
     .attr("xlink:href", "data/indiamap.png")
     .on("load", updateImage);
 
+// ==============================================================================
+//                                  Radar Plot
+// ==============================================================================
+
+// SVG size
+var spiderWidth = (window.innerWidth / 2) - 20
+var spiderHeight = window.innerHeight
+var spiderPadding = 100
+var spiderDim = Math.min(spiderWidth, spiderHeight) - (2 * spiderPadding)
+var spiderRad = spiderDim / 2
+
+// Append SVG to the body of the HTML
+var spiderSvg = d3.select("body")
+            .append("svg")
+            .attr("width", spiderWidth)
+            .attr("height", spiderHeight)
+            .style("float", "right")
+            .attr("preserveAspectRatio", "xMidYMid meet")
+
+// TEST DATA: REPLACE WITH REAL WHEN READY
+var cities = ["Ahmedabad", "Bengaluru", "Chennai", "Delhi", "Greater Mumbai", "Hyderabad", "Kanpur", "Kolkata", "Lucknow", "Surat"]
+var spiderData = cities.map((c) => {return {
+    name: c, 
+    "Total spending": Math.random(), 
+    "Female spending": Math.random(), 
+    "Entertainment spending": Math.random(), 
+    "Grocery spending": Math.random(), 
+    "Silver card spending": Math.random()}})
+
+// Radius calculation
+var radScale = d3.scaleLinear()
+    .domain([0, 1])  // Values need to be normalised within their range
+    .range([0, spiderRad])
+
+// Draw radial ticks
+var ticks = [0.25, 0.5, 0.75, 1] 
+spiderSvg.selectAll("circle")
+    .data(ticks)
+    .enter()
+    .append("circle")
+        .attr("cx", spiderWidth / 2)
+        .attr("cy", spiderHeight / 2)
+        .attr("r", (t) => radScale(t))
+        .attr("stroke", "gray")
+        .attr("fill", "none")
+spiderSvg.selectAll("text")
+    .data(ticks)
+    .enter()
+    .append("text")
+        .attr("x", (spiderWidth / 2) + 10)
+        .attr("y", (d) => (spiderHeight / 2) - radScale(d) + 10)
+        .text((d) => (100 * d) + "%")
+        .style("font-size", "12px")
+        .style("font-family", "Helvetica")
+
+// Draw axes
+var axes = ["Total spending", "Female spending", "Entertainment spending", "Grocery spending", "Silver card spending"]
+var numAxes = axes.length
+var axesPositions = axes.map((a, i) => {
+    let angle = (Math.PI / 2) + ((2 * Math.PI * i) / numAxes)
+    let xLen = Math.cos(angle) * spiderRad
+    let yLen = Math.sin(angle) * spiderRad
+    return {name: a, x: (spiderWidth / 2) + xLen, y: (spiderHeight / 2) - yLen}
+})
+spiderSvg.selectAll("line")
+    .data(axesPositions)
+    .enter()
+    .append("line")
+        .attr("x1", spiderWidth / 2)
+        .attr("y1", spiderHeight / 2)
+        .attr("x2", (d) => d.x)
+        .attr("y2", (d) => d.y)
+        .attr("stroke","black")
+spiderSvg.selectAll("myaxes")
+    .data(axesPositions)
+    .enter()
+    .append("text")
+        .attr("x", (d) => {if (d.x < spiderWidth / 2) {return d.x - 10} else {return d.x + 10}})
+        .attr("y", (d) => {if (d.y < spiderHeight / 2) {return d.y - 10} else {return d.y + 10}})
+        .attr("text-anchor", (d) => {if (d.x < spiderWidth / 2) {return "end"} else {return "start"}})
+        .text((d) => d.name)
+        .style("font-size", "12px")
+        .style("font-family", "Helvetica")
+
+// Colour scheme
+var spiderColours = d3.scaleOrdinal()
+    .domain(cities)
+    .range(d3.schemeCategory10)
+
+// Plot paths
+var paths = spiderData.map((d) => {
+    let coords = []
+    axes.forEach((a, i) => {
+        let angle = (Math.PI / 2) + ((2 * Math.PI * i) / numAxes)
+        let xLen = Math.cos(angle) * radScale(d[a])
+        let yLen = Math.sin(angle) * radScale(d[a])
+        coords.push({x: (spiderWidth / 2) + xLen, y: (spiderHeight / 2) + yLen})
+    })
+    let start = coords[0]
+    coords.push(start)
+    return {name: d.name, path: coords}
+})
+spiderSvg.selectAll("path")
+    .data(paths)
+    .enter()
+    .append("path")
+        .datum((d) => d.path)
+        .attr("d", d3.line().x((d) => d.x).y((d) => d.y))
+        .attr("stroke-width", 3)
+        .attr("stroke", (d) => spiderColours(d))
+        .attr("fill", (d) => spiderColours(d))
+        .attr("stroke-opacity", 1)
+        .attr("fill-opacity", 0.5)
+
 // Update image position and size on window resize
 window.addEventListener("resize", function() {
     // Update SVG viewBox attribute
-    svg.attr("viewBox", "0 0 " + window.innerWidth + " " + window.innerHeight);
+    svg.attr("viewBox", "0 0 " + ((window.innerWidth / 2) - 20) + " " + window.innerHeight);
     updateImage();
 });
 
