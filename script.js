@@ -1,5 +1,7 @@
 // script.js
 
+var data, radiusdata;
+
 // Function to update image dimensions based on window size
 function updateImageSize() {
     // Define the dimensions of the image
@@ -28,6 +30,26 @@ function updateImageSize() {
     return { width: imageWidth, height: imageHeight };
 }
 
+function parseCSV(csvData) {
+    var lines = csvData.split('\n');
+    var data = {};
+
+    for (var i = 1; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (line !== '') {
+            var values = line.split(',');
+            var city = values[1].replace(/"/g, ''); // Remove double quotes
+            var amount = parseInt(values[6]);
+            if (!data[city]) {
+                data[city] = 0;
+            }
+            data[city] += amount;
+        }
+    }
+
+    return data;
+}
+
 // Append SVG to the body of the HTML
 var svg = d3.select("body")
             .append("svg")
@@ -41,6 +63,13 @@ var svg = d3.select("body")
 function updateImage() {
     var imageSize = updateImageSize();
 
+    d3.csv("data/top_10_cities_transactions.csv").then(rawData => {
+        data = rawData;
+        radiusdata = parseCSV(rawData);
+    });
+
+    //spend_data = parseCSV(rawData);
+
     // Calculate the center coordinates for the image relative to the window size
     var centerY = (window.innerHeight - imageSize.height) / 2;
 
@@ -53,11 +82,16 @@ function updateImage() {
 
     // Overlay red circles on the image
     var circleData = [
-        { cx: imageSize.width * 0.2, cy: centerY + imageSize.height * 0.4, r: imageSize.width * 0.03 },
-        { cx: imageSize.width * 0.5, cy: centerY + imageSize.height * 0.3, r: imageSize.width * 0.04 },
-        { cx: imageSize.width * 0.7, cy: centerY + imageSize.height * 0.6, r: imageSize.width * 0.05 },
-        { cx: imageSize.width * 0.3, cy: centerY + imageSize.height * 0.7, r: imageSize.width * 0.025 },
-        { cx: imageSize.width * 0.6, cy: centerY + imageSize.height * 0.5, r: imageSize.width * 0.03 }
+        { cx: imageSize.width * 0.29, cy: centerY + imageSize.height * 0.53, r: imageSize.width * 0.00567794310 * 2 },//ahmedabad //done with coordinates
+        { cx: imageSize.width * 0.38, cy: centerY + imageSize.height * 0.77, r: imageSize.width * 0.00572326739 * 2 },//bengaluru //done with coordiantes
+        { cx: imageSize.width * 0.44, cy: centerY + imageSize.height * 0.785, r: imageSize.width * 0.00114730600 * 2 },//chennai //done with coordinates
+        { cx: imageSize.width * 0.3, cy: centerY + imageSize.height * 0.7, r: imageSize.width * 0.00556929212 * 2 },//delhi
+        { cx: imageSize.width * 0.6, cy: centerY + imageSize.height * 0.5, r: imageSize.width * 0.00576751476 * 2 },//greater mumbai
+        { cx: imageSize.width * 0.2, cy: centerY + imageSize.height * 0.4, r: imageSize.width * 0.00114493477 * 2 },//hyderabad
+        { cx: imageSize.width * 0.5, cy: centerY + imageSize.height * 0.3, r: imageSize.width * 0.00114370532 * 2 },//kanpur
+        { cx: imageSize.width * 0.7, cy: centerY + imageSize.height * 0.6, r: imageSize.width * 0.00115466943 * 2 },//kolkata
+        { cx: imageSize.width * 0.3, cy: centerY + imageSize.height * 0.7, r: imageSize.width * 0.00115334476 * 2 },//lucknow
+        { cx: imageSize.width * 0.6, cy: centerY + imageSize.height * 0.5, r: imageSize.width * 0.00114486151 * 2 }//surat
     ];
 
 
@@ -79,6 +113,8 @@ function updateImage() {
         .style("opacity", 0.5); // Set opacity for better visibility
 }
 
+
+    
 // Append an image element to the SVG and load the image
 svg.append("image")
     .attr("xlink:href", "data/indiamap.png")
@@ -90,3 +126,4 @@ window.addEventListener("resize", function() {
     svg.attr("viewBox", "0 0 " + window.innerWidth + " " + window.innerHeight);
     updateImage();
 });
+
