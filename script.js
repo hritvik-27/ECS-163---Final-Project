@@ -136,6 +136,16 @@ function updateImage() {
             .style("stroke", "red")
             .style("stroke-width", 1)
             .style("stroke-opacity", 1);
+        
+        // Add title
+        svg.append("text")
+            .attr("class", "chart-title")
+            .attr("x", mapWidth / 2)
+            .attr("y", (mapHeight / 2) - (imageHeight / 2) - 20)
+            .attr("text-anchor", "middle")
+            .text("Click a city to see more detail")
+            .style("font-size", "20px")
+            .style("font-family", "Helvetica")
     })
 }
 
