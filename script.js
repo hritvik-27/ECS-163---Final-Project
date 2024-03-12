@@ -148,6 +148,7 @@ var spiderData = cities.map((c) => {return {
     "Entertainment spending": Math.random(), 
     "Grocery spending": Math.random(), 
     "Silver card spending": Math.random()}})
+var selectedSpiderData = spiderData
 
 // Radius calculation
 var radScale = d3.scaleLinear()
@@ -216,7 +217,7 @@ var paths = spiderData.map((d) => {
         let angle = (Math.PI / 2) + ((2 * Math.PI * i) / numAxes)
         let xLen = Math.cos(angle) * radScale(d[a])
         let yLen = Math.sin(angle) * radScale(d[a])
-        coords.push({x: (spiderWidth / 2) + xLen, y: (spiderHeight / 2) + yLen})
+        coords.push({x: (spiderWidth / 2) + xLen, y: (spiderHeight / 2) - yLen})
     })
     let start = coords[0]
     coords.push(start)
@@ -226,13 +227,91 @@ spiderSvg.selectAll("path")
     .data(paths)
     .enter()
     .append("path")
+        .attr("id", (d) => d.name.replace(/\s+/g, ''))
         .datum((d) => d.path)
         .attr("d", d3.line().x((d) => d.x).y((d) => d.y))
         .attr("stroke-width", 3)
         .attr("stroke", (d) => spiderColours(d))
         .attr("fill", (d) => spiderColours(d))
-        .attr("stroke-opacity", 1)
-        .attr("fill-opacity", 0.5)
+        .attr("stroke-opacity", 0)
+        .attr("fill-opacity", 0)
+
+// Add title
+spiderSvg.append("text")
+    .attr("class", "chart-title")
+    .attr("x", spiderWidth / 2)
+    .attr("y", (spiderHeight / 2) - spiderRad - 50)
+    .attr("text-anchor", "middle")
+    .text("Compare spending between cities by checking the boxes:")
+    .style("font-size", "20px")
+    .style("font-family", "Helvetica")
+
+// Add legend with checkboxes
+spiderSvg.selectAll("mycheckboxes")
+    .data(cities)
+    .enter()
+    .append("rect")
+        .attr("x", (_,i) => 5 + ((spiderWidth / 4) * (i % 4)))  // Lines of 4
+        .attr("y", (_,i) => 5 + (spiderHeight / 2) + spiderRad + (25 * Math.floor(i / 4)))  // Start right below the spider
+        .attr("width", 20)
+        .attr("height", 20)
+        .attr("selected", 0)
+        .attr("name", (d) => d)
+        .style("fill", (d) => spiderColours(d))
+        .style("stroke", "black")
+        .style("stroke-width", 2)
+        .style("fill-opacity", 0)
+        .on("mouseover", function(d) {
+            let thisObj = d3.select(this)
+            if (thisObj.attr("selected") === "0") {
+                thisObj.transition()
+                    .duration(100)
+                    .style("fill-opacity", 0.5)
+            }
+        })
+        .on("mouseout", function(d) {
+            let thisObj = d3.select(this)
+            if (thisObj.attr("selected") === "0") {
+                thisObj.transition()
+                    .duration(100)
+                    .style("fill-opacity", 0)
+            }
+        })
+        .on("click", function(d) {
+            let thisObj = d3.select(this)
+            let relativePath = d3.selectAll("#" + thisObj.attr("name").replace(/\s+/g, ''))
+            console.log("#" + thisObj.attr("name"))
+            console.log(relativePath)
+            if (thisObj.attr("selected") === "0") {
+                thisObj.transition()
+                    .duration(100)
+                    .style("fill-opacity", 1)
+                    .attr("selected", 1)
+                relativePath.transition()
+                    .duration(100)
+                    .style("stroke-opacity", 1)
+                    .style("fill-opacity", 0.5)
+            } else {
+                thisObj.transition()
+                    .duration(100)
+                    .style("fill-opacity", 0)
+                    .attr("selected", 0)
+                relativePath.transition()
+                    .duration(100)
+                    .style("stroke-opacity", 0)
+                    .style("fill-opacity", 0)
+            }
+        })
+
+spiderSvg.selectAll("checkboxlabels")
+    .data(cities)
+    .enter()
+    .append("text")
+        .attr("x", (_,i) => 30 + ((spiderWidth / 4) * (i % 4)))
+        .attr("y", (_,i) => 20 + (spiderHeight / 2) + spiderRad + (25 * Math.floor(i / 4)))
+        .text((d) => d)
+        .style("font-size", "14px")
+        .style("font-family", "Helvetica")
 
 // Update image position and size on window resize
 window.addEventListener("resize", function() {
