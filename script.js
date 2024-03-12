@@ -85,13 +85,13 @@ function updateImage() {
         { cx: imageSize.width * 0.29, cy: centerY + imageSize.height * 0.53, r: imageSize.width * 0.00567794310 * 2 },//ahmedabad //done with coordinates
         { cx: imageSize.width * 0.38, cy: centerY + imageSize.height * 0.77, r: imageSize.width * 0.00572326739 * 2 },//bengaluru //done with coordiantes
         { cx: imageSize.width * 0.44, cy: centerY + imageSize.height * 0.785, r: imageSize.width * 0.00114730600 * 2 },//chennai //done with coordinates
-        { cx: imageSize.width * 0.3, cy: centerY + imageSize.height * 0.7, r: imageSize.width * 0.00556929212 * 2 },//delhi
-        { cx: imageSize.width * 0.6, cy: centerY + imageSize.height * 0.5, r: imageSize.width * 0.00576751476 * 2 },//greater mumbai
-        { cx: imageSize.width * 0.2, cy: centerY + imageSize.height * 0.4, r: imageSize.width * 0.00114493477 * 2 },//hyderabad
-        { cx: imageSize.width * 0.5, cy: centerY + imageSize.height * 0.3, r: imageSize.width * 0.00114370532 * 2 },//kanpur
-        { cx: imageSize.width * 0.7, cy: centerY + imageSize.height * 0.6, r: imageSize.width * 0.00115466943 * 2 },//kolkata
-        { cx: imageSize.width * 0.3, cy: centerY + imageSize.height * 0.7, r: imageSize.width * 0.00115334476 * 2 },//lucknow
-        { cx: imageSize.width * 0.6, cy: centerY + imageSize.height * 0.5, r: imageSize.width * 0.00114486151 * 2 }//surat
+        { cx: imageSize.width * 0.395, cy: centerY + imageSize.height * 0.34, r: imageSize.width * 0.00556929212 * 2 },//delhi //done with coordiantes
+        { cx: imageSize.width * 0.31, cy: centerY + imageSize.height * 0.63, r: imageSize.width * 0.00576751476 * 2 },//greater mumbai //done with coordiantes
+        { cx: imageSize.width * 0.42, cy: centerY + imageSize.height * 0.67, r: imageSize.width * 0.00114493477 * 2 },//hyderabad //done with coordinates
+        { cx: imageSize.width * 0.46, cy: centerY + imageSize.height * 0.41, r: imageSize.width * 0.00114370532 * 2 },//kanpur //done with coordinates
+        { cx: imageSize.width * 0.6175, cy: centerY + imageSize.height * 0.54, r: imageSize.width * 0.00115466943 * 2 },//kolkata //done with coordinates
+        { cx: imageSize.width * 0.475, cy: centerY + imageSize.height * 0.39, r: imageSize.width * 0.00115334476 * 2 },//lucknow //done with coordinates
+        { cx: imageSize.width * 0.305, cy: centerY + imageSize.height * 0.565, r: imageSize.width * 0.00114486151 * 2 }//surat //done with coordinates
     ];
 
 
