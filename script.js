@@ -59,6 +59,10 @@ function parseCSV(csvData) {
     return data;
 }
 
+// =======================================================
+//                           Map
+// =======================================================
+
 // LHS dimensions
 var mapWidth = (window.innerWidth / 2) - 20
 var mapHeight = window.innerHeight
@@ -169,6 +173,7 @@ function updateImage() {
                     .attr("y", d.clientY)
             })
             .on("click", function(d) {
+                // Zoom map
                 let cityName = d3.select(this).attr("name")
                 let focusPos = circlePos[cityName]
                 zoomed = true
@@ -181,6 +186,7 @@ function updateImage() {
                     .attr("y", (mapHeight / 2) - (2 * focusPos.cy) + (2 * centerY))
                     .attr("width", imageSize.width)
                     .attr("height", imageSize.height)
+                    .attr("opacity", 0.3)
                 
                 // Hide other elements
                 d3.select(".chart-title")
@@ -189,7 +195,7 @@ function updateImage() {
                     .style("opacity", 0)
                 d3.selectAll(".cityCircle")
                     .transition()
-                    .duration(1000)
+                    .duration(200)
                     .style("opacity", 0)
                     .attr("pointer-events", "none")
 
@@ -212,6 +218,9 @@ function updateImage() {
                     .style("font-size", "16px")
                     .style("font-family", "Helvetica")
                     .on("click", restoreMap)
+                
+                // Create glyph
+                generateGlyph(filteredData, "Exp Type", cityName)
             })
         
         // Add title
@@ -233,10 +242,12 @@ function updateImage() {
     })
 }
 
+// Reset map after zoom
 function restoreMap() {
-    // Remove back elements
+    // Remove elements
     d3.selectAll("#backText").remove()
     d3.selectAll("#backRect").remove()
+    d3.selectAll(".glyph").remove()
 
     // Resize map
     zoomed = false
@@ -249,6 +260,7 @@ function restoreMap() {
         .attr("y", centerY)
         .attr("width", imageSize.width)
         .attr("height", imageSize.height)
+        .attr("opacity", 1)
     
     // Restore chart elements
     d3.select(".chart-title")
@@ -257,9 +269,78 @@ function restoreMap() {
         .style("opacity", 1)
     d3.selectAll(".cityCircle")
         .transition()
-        .duration(1000)
+        .delay(800)
+        .duration(200)
         .style("opacity", 1)
         .attr("pointer-events", "auto")
+}
+
+// Generate glyph
+function generateGlyph(data, category, city) {
+
+    // Get data for category
+    let subset = data.filter((d) => d.City.split(",")[0] === city)
+    // Find sum for each subtype
+    let categories = new Object()
+    subset.forEach((d) => {
+        if (categories[d[category]] === undefined) {
+            categories[d[category]] = 0
+        }
+        categories[d[category]] += parseInt(d.Amount)
+    })
+    let vals = Object.keys(categories)
+    let categoryData = vals.map((c) => {return {val: c, amount: categories[c]}})
+
+    // Create coxcomb-style glyph
+    let glyphColours = d3.scaleOrdinal()
+        .domain(vals)
+        .range(d3.schemeDark2)
+    
+    let maxRad = Math.min(mapWidth, mapHeight) / 4
+    let radiusScale = d3.scaleLinear()
+        .domain([0, d3.max(categoryData, (d) => d.amount)])
+        .range([0, maxRad])
+    
+    let pie = d3.pie()
+        .value((d) => d.amount)
+    let path = d3.arc()
+        .outerRadius((d) => radiusScale(d.data.amount))
+        .innerRadius(20)
+    let label = d3.arc()
+        .outerRadius(maxRad)
+        .innerRadius(maxRad)
+
+    let glyph = svg.append("g")
+        .attr("class", "glyph")
+        .attr("transform", `translate(${mapWidth / 2},${mapHeight / 2})`)
+        .selectAll(".arc")
+        .data(pie(categoryData))
+        .enter()
+    
+    glyph.append("path")
+        .transition()
+        .delay(800)
+        .duration(200)
+        .attr("d", path)
+        .attr("class", "arc")
+        .attr("fill", (d) => glyphColours(d))
+        .attr("fill-opacity", 0.5)
+        .attr("stroke", (d) => glyphColours(d))
+        .attr("stroke-width", 2)
+        .attr("stroke-opacity", 1)
+        
+    glyph.append("text")
+        .transition()
+        .delay(800)
+        .duration(200)
+        .text((d) => d.data.val)
+        .attr("class", "label")
+        .attr("x", (d) => label.centroid(d)[0])
+        .attr("y", (d) => label.centroid(d)[1])
+        .attr("text-anchor", "middle")
+        .style("font-size", "18px")
+        .style("font-family", "Helvetica")
+
 }
     
 // Append an image element to the SVG and load the image
