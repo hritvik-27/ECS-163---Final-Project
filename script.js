@@ -521,7 +521,7 @@ d3.csv("data/top_10_cities_transactions.csv").then(data => {
             .attr("r", (t) => radScale(t))
             .attr("stroke", "gray")
             .attr("fill", "none")
-    spiderSvg.selectAll("text")
+    /*spiderSvg.selectAll("text")
         .data(ticks)
         .enter()
         .append("text")
@@ -529,7 +529,7 @@ d3.csv("data/top_10_cities_transactions.csv").then(data => {
             .attr("y", (d) => (spiderHeight / 2) - radScale(d) + 10)
             .text((d) => (100 * d) + "%")
             .style("font-size", "12px")
-            .style("font-family", "Helvetica")
+            .style("font-family", "Helvetica")*/
 
     // Draw axes
     var axes = ["Total spending", "Female spending", "Entertainment spending", "Grocery spending", "Silver card spending"]
@@ -539,6 +539,13 @@ d3.csv("data/top_10_cities_transactions.csv").then(data => {
         let xLen = Math.cos(angle) * spiderRad
         let yLen = Math.sin(angle) * spiderRad
         return {name: a, x: (spiderWidth / 2) + xLen, y: (spiderHeight / 2) - yLen}
+    })
+    var axesRad = new Object()
+    var axesInterpolate = new Object()
+    axes.forEach((a) => {
+        let valRange = [0, d3.max(spiderData, (d) => d[a])]
+        axesRad[a] = d3.scaleLinear().domain(valRange).range([0, spiderRad])
+        axesInterpolate[a] = d3.interpolateNumber(valRange[0], valRange[1])
     })
     spiderSvg.selectAll("line")
         .data(axesPositions)
@@ -559,6 +566,29 @@ d3.csv("data/top_10_cities_transactions.csv").then(data => {
             .text((d) => d.name)
             .style("font-size", "12px")
             .style("font-family", "Helvetica")
+    Object.keys(axesInterpolate).forEach((i, j) => {
+        let interpolator = axesInterpolate[i]
+        let ticks = [interpolator(0.25), interpolator(0.5), interpolator(0.75), interpolator(1)]
+        let angle = (Math.PI / 2) + ((2 * Math.PI * j) / numAxes)
+        console.log(angle, i)
+        let modAngle = angle % (2 * Math.PI)
+        let lhs = modAngle < (Math.PI / 2) || modAngle > (3 * Math.PI / 2)
+        let top = modAngle < Math.PI
+        spiderSvg.selectAll("mylabs")
+            .data(ticks)
+            .enter()
+            .append("text")
+                .attr("x", (d) => (spiderWidth / 2) + (Math.cos(angle) * axesRad[i](d)))
+                .attr("y", (d) => {
+                    let direction
+                    if (j === 0) {direction = 0.5} else if (top) {direction = -1} else {direction = 1}
+                    return (spiderHeight / 2) - (Math.sin(angle) * axesRad[i](d) - (10 * direction))
+                })
+                .attr("text-anchor", (_) => {if (lhs) {return "end"} else {return "start"}})
+                .text((d) => (d * 100).toFixed(1) + "%")
+                .style("font-size", "12px")
+                .style("font-family", "Helvetica")
+    })
 
     // Colour scheme
     var spiderColours = d3.scaleOrdinal()
@@ -570,8 +600,8 @@ d3.csv("data/top_10_cities_transactions.csv").then(data => {
         let coords = []
         axes.forEach((a, i) => {
             let angle = (Math.PI / 2) + ((2 * Math.PI * i) / numAxes)
-            let xLen = Math.cos(angle) * radScale(d[a])
-            let yLen = Math.sin(angle) * radScale(d[a])
+            let xLen = Math.cos(angle) * axesRad[a](d[a])
+            let yLen = Math.sin(angle) * axesRad[a](d[a])
             coords.push({x: (spiderWidth / 2) + xLen, y: (spiderHeight / 2) - yLen})
         })
         let start = coords[0]
