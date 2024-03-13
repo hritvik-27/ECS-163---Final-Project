@@ -10,6 +10,9 @@ var imageHeight = 450; // Default image height
 var windowWidth = window.innerWidth;
 var windowHeight = window.innerHeight;
 
+// Calculate image size differently when zoomed in
+var zoomed = false
+
 // Function to update image dimensions based on window size
 function updateImageSize() {
 
@@ -27,6 +30,11 @@ function updateImageSize() {
     // Update image dimensions
     imageWidth *= scale;
     imageHeight *= scale;
+
+    if (zoomed) {
+        imageWidth *= 2
+        imageHeight *= 2
+    }
 
     return { width: imageWidth, height: imageHeight };
 }
@@ -54,6 +62,8 @@ function parseCSV(csvData) {
 // LHS dimensions
 var mapWidth = (window.innerWidth / 2) - 20
 var mapHeight = window.innerHeight
+var imageSize
+var centerY
 
 // Append SVG to the body of the HTML
 var svg = d3.select("body")
@@ -66,7 +76,7 @@ var svg = d3.select("body")
 
 // Function to update the image position and size
 function updateImage() {
-    var imageSize = updateImageSize();
+    imageSize = updateImageSize();
 
     var maxRadius = Math.min(imageWidth, imageHeight) * 0.05
 
@@ -89,7 +99,7 @@ function updateImage() {
         totalData = Object.keys(cityCumulative).map((c) => {return {name: c, total: cityCumulative[c]}})
 
         // Calculate the center coordinates for the image relative to the window size
-        var centerY = (mapHeight - imageSize.height) / 2;
+        centerY = (mapHeight - imageSize.height) / 2;
 
         // Update image attributes
         svg.select("image")
@@ -133,12 +143,14 @@ function updateImage() {
             .attr("r", (d) => cityScale(d.total))
             .attr("name", (d) => d.name)
             .attr("spend", (d) => d.total)
+            .attr("class", "cityCircle")
             .style("fill", "red")
             .style("fill-opacity", 0.5) // Set opacity for better visibility
             .style("stroke", "red")
             .style("stroke-width", 1)
             .style("stroke-opacity", 1)
             .on("mouseover", function(d) {
+                // Reveal tooltip
                 let cityName = d3.select(this).attr("name")
                 let spend = d3.select(this).attr("spend")
                 d3.select("#Tooltip")
@@ -146,13 +158,60 @@ function updateImage() {
                     .text(cityName + ": ₹" + spend.replace(/\B(?=(\d{3})+(?!\d))/g, ","))
             })
             .on("mouseout", function(d) {
+                // Hide tooltip
                 d3.select("#Tooltip")
                     .style("opacity", 0)
             })
             .on("mousemove", function(d) {
+                // Move tooltip
                 d3.select("#Tooltip")
                     .attr("x", d.clientX)
                     .attr("y", d.clientY)
+            })
+            .on("click", function(d) {
+                let cityName = d3.select(this).attr("name")
+                let focusPos = circlePos[cityName]
+                zoomed = true
+                imageSize.width *= 2
+                imageSize.height *= 2
+                d3.select("image")
+                    .transition()
+                    .duration(1000)
+                    .attr("x", (mapWidth / 2) - (2 * focusPos.cx))
+                    .attr("y", (mapHeight / 2) - (2 * focusPos.cy) + (2 * centerY))
+                    .attr("width", imageSize.width)
+                    .attr("height", imageSize.height)
+                
+                // Hide other elements
+                d3.select(".chart-title")
+                    .transition()
+                    .duration(1000)
+                    .style("opacity", 0)
+                d3.selectAll(".cityCircle")
+                    .transition()
+                    .duration(1000)
+                    .style("opacity", 0)
+                    .attr("pointer-events", "none")
+
+                // Render back button
+                svg.append("rect")
+                    .attr("id", "backRect")
+                    .attr("x", 5)
+                    .attr("y", 5)
+                    .attr("width", 70)
+                    .attr("height", 40)
+                    .style("fill", "white")
+                    .style("stroke", "black")
+                    .style("stroke-width", 2)
+                    .on("click", restoreMap)
+                svg.append("text")
+                    .attr("id", "backText")
+                    .attr("x", 20)
+                    .attr("y", 30)
+                    .text("Back")
+                    .style("font-size", "16px")
+                    .style("font-family", "Helvetica")
+                    .on("click", restoreMap)
             })
         
         // Add title
@@ -174,6 +233,34 @@ function updateImage() {
     })
 }
 
+function restoreMap() {
+    // Remove back elements
+    d3.selectAll("#backText").remove()
+    d3.selectAll("#backRect").remove()
+
+    // Resize map
+    zoomed = false
+    imageSize.width /= 2
+    imageSize.height /= 2
+    d3.select("image")
+        .transition()
+        .duration(1000)
+        .attr("x", 0)
+        .attr("y", centerY)
+        .attr("width", imageSize.width)
+        .attr("height", imageSize.height)
+    
+    // Restore chart elements
+    d3.select(".chart-title")
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+    d3.selectAll(".cityCircle")
+        .transition()
+        .duration(1000)
+        .style("opacity", 1)
+        .attr("pointer-events", "auto")
+}
     
 // Append an image element to the SVG and load the image
 svg.append("image")
