@@ -193,7 +193,7 @@ function updateImage() {
                     .attr("opacity", 0.3)
                 
                 // Hide other elements
-                d3.select(".chart-title")
+                d3.selectAll(".chart-title")
                     .transition()
                     .duration(1000)
                     .style("opacity", 0)
@@ -312,10 +312,18 @@ function updateImage() {
         svg.append("text")
             .attr("class", "chart-title")
             .attr("x", mapWidth / 2)
-            .attr("y", (mapHeight / 2) - (imageHeight / 2) - 20)
+            .attr("y", (mapHeight / 2) - (imageHeight / 2) - 25)
             .attr("text-anchor", "middle")
-            .text("Click a city to see more detail")
+            .text("Spending Breakdown in Indian Cities, October 2013 - April 2015")
             .style("font-size", "20px")
+            .style("font-family", "Helvetica")
+        svg.append("text")
+            .attr("class", "chart-title")
+            .attr("x", mapWidth / 2)
+            .attr("y", (mapHeight / 2) - (imageHeight / 2))
+            .attr("text-anchor", "middle")
+            .text("Click a city to see more")
+            .style("font-size", "14px")
             .style("font-family", "Helvetica")
         
         // Add tooltip
@@ -359,7 +367,7 @@ function restoreMap() {
         .attr("opacity", 1)
     
     // Restore chart elements
-    d3.select(".chart-title")
+    d3.selectAll(".chart-title")
         .transition()
         .duration(1000)
         .style("opacity", 1)
