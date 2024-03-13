@@ -247,7 +247,12 @@ function restoreMap() {
     // Remove elements
     d3.selectAll("#backText").remove()
     d3.selectAll("#backRect").remove()
-    d3.selectAll(".glyph").remove()
+    d3.selectAll(".glyph")
+        .transition()
+        .duration(200).style("opacity", 0)
+        .transition()
+        .delay(200)
+        .remove()
 
     // Resize map
     zoomed = false
