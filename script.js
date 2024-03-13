@@ -68,6 +68,7 @@ var mapWidth = (window.innerWidth / 2) - 20
 var mapHeight = window.innerHeight
 var imageSize
 var centerY
+let maxRad = Math.min(mapWidth, mapHeight) / 4
 
 // Append SVG to the body of the HTML
 var svg = d3.select("body")
@@ -77,6 +78,9 @@ var svg = d3.select("body")
             .attr("viewBox", "0 0 " + ((window.innerWidth / 2) - 20) + " " + window.innerHeight)
             .style("float", "left")
             .attr("preserveAspectRatio", "xMidYMid meet")
+
+// Glyph categories
+var glyphTypes = ["Exp Type", "Gender", "Card Type"]
 
 // Function to update the image position and size
 function updateImage() {
@@ -219,7 +223,88 @@ function updateImage() {
                     .style("font-family", "Helvetica")
                     .on("click", restoreMap)
                 
-                // Create glyph
+                // Create glyph and options
+                svg.selectAll("radio")
+                    .data(glyphTypes)
+                    .enter()
+                    .append("circle")
+                        .attr("cx", (3 * mapWidth / 4) + 50)
+                        .attr("cy", (_, i) => (mapHeight / 2) - maxRad + (i * 50))
+                        .attr("r", 10)
+                        .attr("class", "radio")
+                        .attr("selected", (d) => {
+                            if (d === "Exp Type") {
+                                return 1
+                            } else {
+                                return 0
+                            }
+                        })
+                        .attr("glyph", (d) => d)
+                        .attr("city", cityName)
+                        .style("fill", "red")
+                        .style("stroke", "black")
+                        .style("stroke-width", 3)
+                        .style("fill-opacity", (d) => {
+                            if (d === "Exp Type") {
+                                return 1
+                            } else {
+                                return 0
+                            }
+                        })
+                        .on("mouseover", function(d) {
+                            let thisObj = d3.select(this)
+                            if (thisObj.attr("selected") === "0") {
+                                thisObj.transition()
+                                    .duration(100)
+                                    .style("fill-opacity", 0.5)
+                            }
+                        })
+                        .on("mouseout", function(d) {
+                            let thisObj = d3.select(this)
+                            if (thisObj.attr("selected") === "0") {
+                                thisObj.transition()
+                                    .duration(100)
+                                    .style("fill-opacity", 0)
+                            }
+                        })
+                        .on("click", function(d) {
+                            let thisObj = d3.select(this)
+                            if (thisObj.attr("selected") === "0") {
+                                // Update buttons
+                                d3.selectAll("circle.radio")
+                                    .transition()
+                                    .duration(100)
+                                    .style("fill-opacity", 0)
+                                    .attr("selected", 0)
+                                thisObj.transition()
+                                    .duration(100)
+                                    .style("fill-opacity", 1)
+                                    .attr("selected", 1)
+                                
+                                // Delete current glyph
+                                d3.selectAll(".glyph")
+                                    .transition()
+                                    .duration(200).style("opacity", 0)
+                                    .transition()
+                                    .delay(200)
+                                    .remove()
+                                
+                                // Add new glyph
+                                generateGlyph(filteredData, thisObj.attr("glyph"), thisObj.attr("city"))
+                            }
+                        })
+                
+                svg.selectAll("radio")
+                    .data(glyphTypes)
+                    .enter()
+                    .append("text")
+                        .attr("x", (3 * mapWidth / 4) + 65)
+                        .attr("y", (_, i) => (mapHeight / 2) - maxRad + (i * 50) + 5)
+                        .attr("class", "radio")
+                        .text((d) => d)
+                        .style("font-size", "14px")
+                        .style("font-family", "Helvetica")
+
                 generateGlyph(filteredData, "Exp Type", cityName)
             })
         
@@ -248,6 +333,12 @@ function restoreMap() {
     d3.selectAll("#backText").remove()
     d3.selectAll("#backRect").remove()
     d3.selectAll(".glyph")
+        .transition()
+        .duration(200).style("opacity", 0)
+        .transition()
+        .delay(200)
+        .remove()
+    d3.selectAll(".radio")
         .transition()
         .duration(200).style("opacity", 0)
         .transition()
@@ -301,7 +392,6 @@ function generateGlyph(data, category, city) {
         .domain(vals)
         .range(d3.schemeDark2)
     
-    let maxRad = Math.min(mapWidth, mapHeight) / 4
     let radiusScale = d3.scaleLinear()
         .domain([0, d3.max(categoryData, (d) => d.amount)])
         .range([0, maxRad])
