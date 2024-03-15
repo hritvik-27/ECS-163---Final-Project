@@ -2,6 +2,10 @@
 ## ECS 163 Final Project
 ### Group 16
 
+Our storytelling uses a martini-glass structure.\
+The top of the page contains our story elements and some static charts.\
+At the bottom is our interactive visualization.
+
 Our visualization is formed of two main charts:\
 On the left of the page is a map of India.\
 On the right is a radar plot for comparing cities.
